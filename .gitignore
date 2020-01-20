@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#ignore data folder except for the README
+data/*
+!data/README.md
