@@ -7,6 +7,7 @@ Using PyTorch to apply machine learning techniques to source code.
 - Classification
 - Sequence-to-sequence
 - Distance encoding
+- Masked language modeling
 
 ## Datasets
 
