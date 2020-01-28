@@ -52,7 +52,7 @@ for language in languages:
                             obfuscated_tokens[i:i+len(func_name)] = ['<mask>']
                             break
 
-                    #check it has actually obfuscated something
+                    # check it has actually obfuscated something
                     assert obfuscated_tokens is not None
 
                     example = {'code_tokens': code_tokens,
