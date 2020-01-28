@@ -55,10 +55,10 @@ for language in languages:
                     # check it has actually obfuscated something
                     assert obfuscated_tokens is not None
 
-                    example = {'code_tokens': code_tokens,
-                               'docstring_tokens': docstring_tokens,
-                               'func_name': func_name,
-                               'obfuscated_tokens': obfuscated_tokens}
+                    example = {'code': code_tokens,
+                               'docstring': docstring_tokens,
+                               'function_name': func_name,
+                               'obfuscated_code': obfuscated_tokens}
 
                     json.dump(example, f)
                     f.write('\n')

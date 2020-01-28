@@ -4,14 +4,11 @@ import torch.nn.functional as F
 
 class Encoder(nn.Module):
     def __init__(self, 
-                 input_dim, 
+                 vocab_size, 
                  hid_dim, 
                  n_layers, 
                  n_heads, 
                  pf_dim, 
-                 encoder_layer, 
-                 multi_head_attention_layer, 
-                 positionwise_feedforward_layer, 
                  dropout,
                  device,
                  max_length = 100):
@@ -19,16 +16,14 @@ class Encoder(nn.Module):
 
         self.device = device
 
-        self.tok_embedding = nn.Embedding(input_dim, hid_dim)
+        self.tok_embedding = nn.Embedding(vocab_size, hid_dim)
         self.pos_embedding = nn.Embedding(max_length, hid_dim)
 
-        self.layers = nn.ModuleList([encoder_layer(hid_dim, 
-                                                   n_heads, 
-                                                   pf_dim, 
-                                                   multi_head_attention_layer, 
-                                                   positionwise_feedforward_layer, 
-                                                   dropout, 
-                                                   device) 
+        self.layers = nn.ModuleList([EncoderLayer(hid_dim, 
+                                                  n_heads, 
+                                                  pf_dim, 
+                                                  dropout, 
+                                                  device) 
                                      for _ in range(n_layers)])
 
         self.dropout = nn.Dropout(dropout)
@@ -62,22 +57,20 @@ class EncoderLayer(nn.Module):
     def __init__(self, 
                  hid_dim, 
                  n_heads, 
-                 pf_dim, 
-                 multi_head_attention_layer, 
-                 positionwise_feedforward_layer, 
+                 pf_dim,
                  dropout, 
                  device):
         super().__init__()
         
         self.ln_1 = nn.LayerNorm(hid_dim)
         self.ln_2 = nn.LayerNorm(hid_dim)
-        self.self_attention = multi_head_attention_layer(hid_dim, 
-                                                         n_heads, 
-                                                         dropout, 
-                                                         device)
-        self.positionwise_feedforward = positionwise_feedforward_layer(hid_dim, 
-                                                                       pf_dim, 
-                                                                       dropout)
+        self.self_attention = MultiHeadAttentionLayer(hid_dim, 
+                                                      n_heads, 
+                                                      dropout, 
+                                                      device)
+        self.positionwise_feedforward = PositionwiseFeedforwardLayer(hid_dim, 
+                                                                     pf_dim, 
+                                                                     dropout)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, src, src_mask):
@@ -105,14 +98,11 @@ class EncoderLayer(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(self, 
-                 output_dim, 
+                 vocab_size, 
                  hid_dim, 
                  n_layers, 
                  n_heads, 
                  pf_dim, 
-                 decoder_layer, 
-                 multi_head_attention_layer, 
-                 positionwise_feedforward_layer, 
                  dropout, 
                  device,
                  max_length = 100):
@@ -120,19 +110,17 @@ class Decoder(nn.Module):
         
         self.device = device
         
-        self.tok_embedding = nn.Embedding(output_dim, hid_dim)
+        self.tok_embedding = nn.Embedding(vocab_size, hid_dim)
         self.pos_embedding = nn.Embedding(max_length, hid_dim)
         
-        self.layers = nn.ModuleList([decoder_layer(hid_dim, 
-                                                   n_heads, 
-                                                   pf_dim, 
-                                                   multi_head_attention_layer, 
-                                                   positionwise_feedforward_layer, 
-                                                   dropout, 
-                                                   device)
+        self.layers = nn.ModuleList([DecoderLayer(hid_dim, 
+                                                  n_heads, 
+                                                  pf_dim, 
+                                                  dropout, 
+                                                  device)
                                      for _ in range(n_layers)])
         
-        self.fc_out = nn.Linear(hid_dim, output_dim)
+        self.fc_out = nn.Linear(hid_dim, vocab_size)
         
         self.dropout = nn.Dropout(dropout)
         
@@ -173,25 +161,23 @@ class DecoderLayer(nn.Module):
                  hid_dim, 
                  n_heads, 
                  pf_dim, 
-                 multi_head_attention_layer, 
-                 positionwise_feedforward_layer, 
                  dropout, 
                  device):
         super().__init__()
         
         self.ln_1 = nn.LayerNorm(hid_dim)
         self.ln_2 = nn.LayerNorm(hid_dim)
-        self.self_attention = multi_head_attention_layer(hid_dim, 
+        self.self_attention = MultiHeadAttentionLayer(hid_dim, 
+                                                      n_heads, 
+                                                      dropout, 
+                                                      device)
+        self.encoder_attention = MultiHeadAttentionLayer(hid_dim, 
                                                          n_heads, 
                                                          dropout, 
                                                          device)
-        self.encoder_attention = multi_head_attention_layer(hid_dim, 
-                                                            n_heads, 
-                                                            dropout, 
-                                                            device)
-        self.positionwise_feedforward = positionwise_feedforward_layer(hid_dim, 
-                                                                       pf_dim, 
-                                                                       dropout)
+        self.positionwise_feedforward = PositionwiseFeedforwardLayer(hid_dim, 
+                                                                     pf_dim, 
+                                                                     dropout)
         self.dropout = nn.Dropout(dropout)
         
     def forward(self, trg, enc_src, trg_mask, src_mask):
