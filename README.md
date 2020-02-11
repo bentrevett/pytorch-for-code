@@ -4,10 +4,9 @@ Using PyTorch to apply machine learning techniques to source code.
 
 ## Tasks
 
-- Classification
-- Sequence-to-sequence
-- Distance encoding
-- Masked language modeling
+- Predicting function names (sequence-to-sequence)
+- Code/documentation retrieval (distance encoding)
+- Pretraining (masked language modeling)
 
 ## Datasets
 

@@ -1,12 +1,11 @@
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader
-
-import models
-
-import functools
 import json
 import collections
+from tqdm import tqdm
+import models
+
 
 def load_vocab(path, max_size=float('inf'), min_freq=1, unk_token='<unk>',
                pad_token='<pad>', mask_token='<mask>'):
@@ -21,7 +20,7 @@ def load_vocab(path, max_size=float('inf'), min_freq=1, unk_token='<unk>',
         vocab[mask_token] = len(vocab)
 
     with open(path, 'r') as f:
-        for line in f:
+        for line in tqdm(f):
             line = json.loads(line)
             token = line['token']
             count = int(line['count'])
@@ -34,6 +33,7 @@ def load_vocab(path, max_size=float('inf'), min_freq=1, unk_token='<unk>',
 
     return vocab
 
+
 def load_data(path, key_vocab_lengths, unk_token='<unk>'):
     """
     Currently assumes all vocabs have the same unk token.
@@ -42,7 +42,7 @@ def load_data(path, key_vocab_lengths, unk_token='<unk>'):
     data = collections.defaultdict(list)
 
     with open(path, 'r') as f:
-        for line in f:
+        for line in tqdm(f):
             example = json.loads(line)
             for key, vocab, length in key_vocab_lengths:
                 unk_idx = vocab[unk_token]
@@ -52,19 +52,6 @@ def load_data(path, key_vocab_lengths, unk_token='<unk>'):
 
     return data
 
-def pad_data(data, pad_idx=1):
-    """
-    Currently assumes all vocabs have the same pad token index.
-    """
-
-    for data_name, examples in data.items():
-        _data = examples
-        _data = pad_sequence(_data, 
-                             batch_first=True,
-                             padding_value=pad_idx)
-        data[data_name] = _data
-
-    return data
 
 def get_num_examples(data):
     """
@@ -77,9 +64,10 @@ def get_num_examples(data):
     for k, v in data.items():
         lengths.append(len(v))
 
-    assert all(l == lengths[0] for l in lengths)
+    assert all(length == lengths[0] for length in lengths)
 
     return lengths[0]
+
 
 def get_iterators(data, batch_size, shuffle):
     """
@@ -93,8 +81,8 @@ def get_iterators(data, batch_size, shuffle):
         """
 
         padded_batch = pad_sequence(batch,
-                                    batch_first = True,
-                                    padding_value = 1)
+                                    batch_first=True,
+                                    padding_value=1)
 
         return padded_batch
 
@@ -102,22 +90,23 @@ def get_iterators(data, batch_size, shuffle):
 
     for k, v in data.items():
         iterator = DataLoader(v,
-                              shuffle = shuffle,
-                              batch_size = batch_size,
-                              collate_fn = _collator)
+                              shuffle=shuffle,
+                              batch_size=batch_size,
+                              collate_fn=_collator)
         iterators[k] = iterator
 
     return iterators
+
 
 def get_models(config, key_vocab_lengths, tasks):
 
     with open(config, 'r') as f:
         config = json.loads(f.read())
 
-    #if predict_name, code encoder and 'decoder' head
-    #if distance, code and docstring encoder and 'distance' head
-    #if language model, code encoder and 'lm' head
-    #if code2doc, code encoder and 'decoder' head 
+    # if predict_name, code encoder and 'decoder' head
+    # if distance, code and docstring encoder and 'distance' head
+    # if language model, code encoder and 'lm' head
+    # if code2doc, code encoder and 'decoder' head 
 
     for key, vocab, length in key_vocab_lengths:
         if key == 'code' or key == 'obfuscated_code' or key == 'function_name':
@@ -140,6 +129,7 @@ def get_models(config, key_vocab_lengths, tasks):
         del config['code_encoder']['model']
         config['code_encoder']['vocab_size'] = code_vocab_size
         config['code_encoder']['device'] = device
+        config['code_encoder']['max_length'] = code_max_length
         code_encoder = getattr(getattr(models, f'{model_type}'), 'Encoder')(**config['code_encoder'])
         _models['code_encoder'] = code_encoder
 

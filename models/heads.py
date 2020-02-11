@@ -2,9 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class LanguageModelHead(nn.Module):
     def __init__(self,
-                 vocab_size, 
+                 vocab_size,
                  hid_dim):
         super().__init__()
 
@@ -12,7 +13,7 @@ class LanguageModelHead(nn.Module):
 
     def forward(self, x):
 
-        #x = [batch size, src len, hid dim]
+        # x = [batch size, src len, hid dim]
 
         x = self.fc(x)
 

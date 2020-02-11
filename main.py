@@ -21,9 +21,9 @@ parser.add_argument('--load', type=str, default=None)
 args = parser.parse_args()
 
 for task in args.tasks:
-    assert task in ['predict_name', 'retrieval', 'language_model_code', 'language_model_docstring']
+    assert task in {'predict_name', 'retrieval', 'language_model_code', 'language_model_docstring'}
 
-#load vocab
+# load vocab
 
 print('Loading vocab...')
 
@@ -35,9 +35,9 @@ if 'predict_name' in args.tasks or 'retrieval' in args.tasks or 'language_model_
 if 'retrieval' in args.tasks or 'language_model_docstring' in args.tasks:
     docstring_vocab = utils.load_vocab(args.data + '_docstring_vocab.jsonl',
                                        max_size=args.vocab_max_size,
-                                       min_freq=args.vocab_min_freq) 
+                                       min_freq=args.vocab_min_freq)
 
-#load data
+# load data
 print('Loading data...')
 
 data_to_load = []
@@ -72,3 +72,6 @@ test_iterators = utils.get_iterators(test_data, args.batch_size, shuffle=False)
 print('Creating models...')
 
 models = utils.get_models(args.config, data_to_load, args.tasks)
+
+for k, v in models.items():
+    print(k, v)
