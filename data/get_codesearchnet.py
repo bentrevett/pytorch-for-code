@@ -3,8 +3,9 @@ import gzip
 import shutil
 
 languages = ['python', 'java', 'go', 'php', 'ruby', 'javascript']
+languages = ['java']
 
-os.system('mkdir codesearchnet')
+os.makedirs('codesearchnet', exist_ok=True)
 
 for language in languages:
     os.system(f'wget https://s3.amazonaws.com/code-search-net/CodeSearchNet/v2/{language}.zip')

@@ -1,37 +1,60 @@
 import torch
 from torch.nn.utils.rnn import pad_sequence
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
 import json
-import collections
 from tqdm import tqdm
-import models
 
+class RetrievalDataset(Dataset):
+    def __init__(self, data, code_pad_idx, desc_pad_idx):
 
-def load_vocab(path, max_size=float('inf'), min_freq=1, unk_token='<unk>',
-               pad_token='<pad>', mask_token='<mask>'):
+        self.data = data
+        self.code_pad_idx = code_pad_idx
+        self.desc_pad_idx = desc_pad_idx
 
-    vocab = dict()
+    def __len__(self):
+        return len(self.data)
 
-    if unk_token is not None:
-        vocab[unk_token] = len(vocab)
-    if pad_token is not None:
-        vocab[pad_token] = len(vocab)
-    if mask_token is not None:
-        vocab[mask_token] = len(vocab)
+    def __getitem__(self, i):
+        return self.data[i]
+
+    def collate(self, batch):
+
+        code = []
+        desc = []
+        is_var = []
+
+        for item in batch:
+
+            code.append(torch.LongTensor(item['code']))
+            desc.append(torch.LongTensor(item['desc']))
+            is_var.append(torch.LongTensor(item['is_var']))
+
+        code = pad_sequence(code, padding_value = self.code_pad_idx)
+        desc = pad_sequence(desc, padding_value = self.desc_pad_idx)
+        is_var = pad_sequence(is_var, padding_value = 0)
+
+        return code, desc, is_var
+
+def load_retrieval_data(path, code_vocab, desc_vocab, code_max_length, 
+                        desc_max_length):
+
+    data = []
 
     with open(path, 'r') as f:
-        for line in tqdm(f):
-            line = json.loads(line)
-            token = line['token']
-            count = int(line['count'])
-            if count < min_freq:
-                break
-            if len(vocab) >= max_size:
-                break
-            assert token not in vocab, f'tried to add {token} to vocab, but already exists!'
-            vocab[token] = len(vocab)
+        for line in tqdm(f, desc='Loading data...'):
+            example = json.loads(line)
+            assert 'code' in example.keys()
+            assert 'desc' in example.keys()
+            code = example['code']
+            desc = example['desc']
+            is_var = example['is_var']
+            code = [code_vocab[t] for t in code][:code_max_length]
+            desc = [desc_vocab[t] for t in desc][:desc_max_length]
+            data.append({'code': code, 'desc': desc, 'is_var': is_var})
 
-    return vocab
+    dataset = RetrievalDataset(data, code_vocab.pad_idx, desc_vocab.pad_idx)
+
+    return dataset
 
 
 def load_data(path, key_vocab_lengths, unk_token='<unk>'):

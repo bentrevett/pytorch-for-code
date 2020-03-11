@@ -2,6 +2,20 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+def truncated_normal_(tensor, mean=0, std=1):
+        size = tensor.shape
+        tmp = tensor.new_empty(size + (4,)).normal_()
+        valid = (tmp < 2) & (tmp > -2)
+        ind = valid.max(-1, keepdim=True)[1]
+        tensor.data.copy_(tmp.gather(-1, ind).squeeze(-1))
+        tensor.data.mul_(std).add_(mean)
+
+def initialize_transformer(m):
+    if not isinstance(m, nn.LayerNorm):
+        if hasattr(m, 'weight'):
+            truncated_normal_(m.weight.data, std=0.02)
+        if hasattr(m, 'bias'):
+            nn.init.constant_(m.bias.data, 0)
 
 class Encoder(nn.Module):
     def __init__(self,
@@ -32,6 +46,8 @@ class Encoder(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
         self.scale = torch.sqrt(torch.FloatTensor([hid_dim])).to(device)
+
+        self.apply(initialize_transformer)
 
     def forward(self, src, src_mask):
 

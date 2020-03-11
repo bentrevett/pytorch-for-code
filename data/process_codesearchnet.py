@@ -10,6 +10,12 @@ languages = ['java']
 
 for language in languages:
 
+    keywords = set()
+
+    with open(f'keywords/{language}.txt', 'r') as f:
+        for line in f:
+            keywords.add(line.strip())
+
     for t in ['train', 'test', 'valid']:
 
         with open(f'codesearchnet/{language}_{t}.jsonl', 'w+') as f:
@@ -22,15 +28,9 @@ for language in languages:
 
                     # get code tokens, split identifiers, flatten list and remove newlines
                     code_tokens = x['code_tokens']
-                    code_tokens = [utils.split_identifier_into_parts(t) for t in code_tokens]
-                    code_tokens = [item for sublist in code_tokens for item in sublist]
-                    code_tokens = [t if t != '\n' else '\\n' for t in code_tokens]
 
                     # get docstring tokens, split identifiers, flatten list and remove newlines
                     docstring_tokens = x['docstring_tokens']
-                    docstring_tokens = [utils.split_identifier_into_parts(t) for t in docstring_tokens]
-                    docstring_tokens = [item for sublist in docstring_tokens for item in sublist]
-                    docstring_tokens = [t if t != '\n' else '\\n' for t in docstring_tokens]
 
                     # get function name
                     func_name = x['func_name']
@@ -38,7 +38,7 @@ for language in languages:
                     # split function name depending on language
                     if language == 'java':
                         func_name = func_name.split('.')[-1]
-                        func_name = utils.split_identifier_into_parts(func_name)
+                        func_tokens = utils.split_identifier_into_parts(func_name)
                     else:
                         raise ValueError(f'{language} does not have a valid function tokenizer yet!')
 
@@ -47,18 +47,22 @@ for language in languages:
                     obfuscated_tokens = None
 
                     for i, t in enumerate(code_tokens):
-                        if code_tokens[i:i+len(func_name)] == func_name:
+                        if code_tokens[i] == func_name:
                             obfuscated_tokens = code_tokens[:]
-                            obfuscated_tokens[i:i+len(func_name)] = ['<mask>']
+                            obfuscated_tokens[i] = '<mask>'
                             break
+
+                    is_var = [1 if (t.isalpha() and t not in keywords) else 0 for t in code_tokens]
 
                     # check it has actually obfuscated something
                     assert obfuscated_tokens is not None
 
                     example = {'code': code_tokens,
-                               'docstring': docstring_tokens,
+                               'desc': docstring_tokens,
                                'function_name': func_name,
-                               'obfuscated_code': obfuscated_tokens}
+                               'function_tokens': func_tokens,
+                               'obfuscated_code': obfuscated_tokens,
+                               'is_var': is_var}
 
                     json.dump(example, f)
                     f.write('\n')

@@ -1,2 +1,2 @@
 from .transformer import Encoder, Decoder
-from .heads import LanguageModelHead
+from .heads import EmbeddingPooler
