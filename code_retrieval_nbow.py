@@ -11,7 +11,7 @@ import json
 import random
 import os
 
-import models.transformer
+import models.nbow
 import vocab
 import utils
 
@@ -36,14 +36,10 @@ parser.add_argument('--vocab_max_size', type=int, default=10_000)
 parser.add_argument('--vocab_min_freq', type=int, default=10)
 
 parser.add_argument('--hid_dim', type=int, default=128)
-parser.add_argument('--n_layers', type=int, default=3)
-parser.add_argument('--n_heads', type=int, default=8)
-parser.add_argument('--pf_dim', type=int, default=256)
-parser.add_argument('--pf_act', type=str, default='gelu')
 parser.add_argument('--dropout', type=float, default=0.1)
 
-parser.add_argument('--lr', type=float, default=0.0005)
-parser.add_argument('--batch_size', type=int, default=450)
+parser.add_argument('--lr', type=float, default=0.01)
+parser.add_argument('--batch_size', type=int, default=1000)
 
 parser.add_argument('--n_epochs', type=int, default=500)
 parser.add_argument('--patience', type=int, default=5)
@@ -65,7 +61,7 @@ if args.seed == None:
     args.seed = random.randint(0, 999)
 
 args_dict = vars(args)
-args_dict['model'] = 'transformer'
+args_dict['model'] = 'nbow'
 
 print(args_dict)
 
@@ -144,27 +140,17 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 print(f'device: {device}')
 
-code_encoder = models.transformer.Encoder(code_vocab_size,
-                                          args.hid_dim,
-                                          args.n_layers,
-                                          args.n_heads,
-                                          args.pf_dim,
-                                          args.pf_act,
-                                          args.dropout,
-                                          device,
-                                          code_vocab.pad_idx,
-                                          args.code_max_length)
+code_encoder = models.nbow.NBOW(code_vocab_size,
+                                args.hid_dim,
+                                args.dropout,
+                                code_vocab.pad_idx,
+                                device)
 
-desc_encoder = models.transformer.Encoder(desc_vocab_size,
-                                          args.hid_dim,
-                                          args.n_layers,
-                                          args.n_heads,
-                                          args.pf_dim,
-                                          args.pf_act,
-                                          args.dropout,
-                                          device,
-                                          desc_vocab.pad_idx,
-                                          args.desc_max_length)
+desc_encoder = models.nbow.NBOW(desc_vocab_size,
+                                args.hid_dim,
+                                args.dropout,
+                                desc_vocab.pad_idx,
+                                device)
 
 code_pooler = models.heads.EmbeddingPooler(args.hid_dim)
 
@@ -213,10 +199,10 @@ def train(code_encoder, desc_encoder, code_pooler, desc_pooler, iterator, optimi
 
         #mask = [seq len, batch size]
 
-        encoded_code, _ = code_encoder(code, code_lengths, code_mask)
+        encoded_code = code_encoder(code, code_lengths, code_mask)
         encoded_code, _ = code_pooler(encoded_code, code_lengths, code_mask)
 
-        encoded_desc, _ = desc_encoder(desc, desc_lengths, desc_mask)
+        encoded_desc = desc_encoder(desc, desc_lengths, desc_mask)
         encoded_desc, _ = desc_pooler(encoded_desc, desc_lengths, desc_mask)
 
         loss, mrr = criterion(encoded_code, encoded_desc)
@@ -257,10 +243,10 @@ def evaluate(code_encoder, desc_encoder, code_pooler, desc_pooler, iterator, cri
 
         #mask = [seq len, batch size]
 
-        encoded_code, _ = code_encoder(code, code_lengths, code_mask)
+        encoded_code = code_encoder(code, code_lengths, code_mask)
         encoded_code, _ = code_pooler(encoded_code, code_lengths, code_mask)
 
-        encoded_desc, _ = desc_encoder(desc, desc_lengths, desc_mask)
+        encoded_desc = desc_encoder(desc, desc_lengths, desc_mask)
         encoded_desc, _ = desc_pooler(encoded_desc, desc_lengths, desc_mask)
 
         loss, mrr = criterion(encoded_code, encoded_desc)

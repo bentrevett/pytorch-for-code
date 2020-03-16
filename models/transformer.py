@@ -27,13 +27,14 @@ class Encoder(nn.Module):
                  pf_act,
                  dropout,
                  device,
+                 pad_idx,
                  max_length):
         super().__init__()
 
         self.device = device
 
-        self.tok_embedding = nn.Embedding(vocab_size, hid_dim)
-        self.pos_embedding = nn.Embedding(max_length, hid_dim)
+        self.tok_embedding = nn.Embedding(vocab_size, hid_dim, padding_idx = pad_idx)
+        self.pos_embedding = nn.Embedding(max_length, hid_dim, padding_idx = pad_idx)
 
         self.layers = nn.ModuleList([EncoderLayer(hid_dim,
                                                   n_heads,
