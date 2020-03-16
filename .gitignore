@@ -130,7 +130,6 @@ dmypy.json
 
 .vscode/*
 
-#ignore data folder except for the README
-data/*
-!data/README.md
-!data/*.py
+*.jsonl
+*.pkl
+runs/*

@@ -51,7 +51,7 @@ def split_identifier_into_parts(identifier):
     for i in range(len(snake_case)):
         part = snake_case[i]
         if len(part) > 0:
-            identifier_parts.extend(s.lower() for s in split_camelcase(part))
+            identifier_parts.extend(s for s in split_camelcase(part))
     if len(identifier_parts) == 0:
         return [identifier]
     return identifier_parts

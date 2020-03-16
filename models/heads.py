@@ -11,24 +11,25 @@ class EmbeddingPooler(nn.Module):
 
     def forward(self, 
                 embeddings,
+                embeddings_len,
                 mask):
 
         #embeddings = [batch, seq len, emb_dim]
-        #mask = [batch, seq len]
+        #mask = [seq len, batch]
 
         _, seq_len, _ = embeddings.shape
 
-        mask = mask.unsqueeze(1)
+        mask = mask.permute(1, 0).unsqueeze(-1)
 
-        #mask = [batch, 1, seq len]
+        #mask = [batch, seq len, 1]
 
-        #_embeddings = [batch, seq len, emb dim]
         weights = torch.sigmoid(self.fc(embeddings))
         #weighs = [batch, seq len, 1]
-        weights = weights.permute(0, 2, 1)
-        #weights = [batch, 1, seq len]
         weighted = embeddings * weights
+        #weighted = [batch, seq len, emb dim]
         weighted = weighted.masked_fill(mask == 0, 0)
+        #weighted = [batch, seq len, emb dim]
+        weighted = weighted.permute(0, 2, 1)
         #weighted = [batch, emb dim, seq len]
         pooled = F.avg_pool1d(weighted,
                               kernel_size = seq_len)
@@ -39,4 +40,4 @@ class EmbeddingPooler(nn.Module):
 
         #pooled = [batch size, emb dim]
 
-        return pooled
+        return pooled, weights

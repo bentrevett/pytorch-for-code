@@ -1,4 +1,6 @@
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 import json
@@ -20,20 +22,27 @@ class RetrievalDataset(Dataset):
     def collate(self, batch):
 
         code = []
+        code_lengths = []
         desc = []
+        desc_lengths = []
         is_var = []
 
         for item in batch:
 
             code.append(torch.LongTensor(item['code']))
+            code_lengths.append(len(item['code']))
             desc.append(torch.LongTensor(item['desc']))
+            desc_lengths.append(len(item['desc']))
             is_var.append(torch.LongTensor(item['is_var']))
 
         code = pad_sequence(code, padding_value = self.code_pad_idx)
         desc = pad_sequence(desc, padding_value = self.desc_pad_idx)
         is_var = pad_sequence(is_var, padding_value = 0)
 
-        return code, desc, is_var
+        code_lengths = torch.LongTensor(code_lengths)
+        desc_lengths = torch.LongTensor(desc_lengths)
+
+        return code, code_lengths, desc, desc_lengths, is_var
 
 def load_retrieval_data(path, code_vocab, desc_vocab, code_max_length, 
                         desc_max_length):
@@ -55,6 +64,51 @@ def load_retrieval_data(path, code_vocab, desc_vocab, code_max_length,
     dataset = RetrievalDataset(data, code_vocab.pad_idx, desc_vocab.pad_idx)
 
     return dataset
+
+def make_mask(sequence, pad_idx):
+    mask = (sequence != pad_idx)
+    return mask
+
+class SoftmaxRetrievalLoss(nn.Module):
+    def __init__(self,
+                 device):
+        super().__init__()
+
+        self.device = device
+
+    def forward(self, encoded_code, encoded_desc):
+
+        #encoded_code/desc = [batch size, enc dim]
+
+        encoded_desc = encoded_desc.permute(1, 0)
+
+        similarity = torch.matmul(encoded_code, encoded_desc)
+
+        classes = torch.arange(similarity.shape[0]).to(self.device)
+
+        loss = F.cross_entropy(similarity, classes)
+
+        with torch.no_grad():
+            mrr = mrr_metric(similarity)
+
+        return loss, mrr
+
+def mrr_metric(similarity):
+    correct_scores = torch.diagonal(similarity)
+    compared_scores = similarity >= correct_scores.unsqueeze(-1)
+    rr = 1 / compared_scores.float().sum(-1)
+    mrr = rr.mean()
+    return mrr
+
+
+
+
+
+
+
+
+
+
 
 
 def load_data(path, key_vocab_lengths, unk_token='<unk>'):

@@ -49,9 +49,13 @@ class Encoder(nn.Module):
 
         self.apply(initialize_transformer)
 
-    def forward(self, src, src_mask):
+    def forward(self, src, src_len, src_mask):
+
+        src = src.permute(1, 0)
+        src_mask = src_mask.permute(1, 0)
 
         # src = [batch size, src len]
+        # src_len = [batch size]
         # src_mask = [batch size, src len]
 
         batch_size = src.shape[0]
@@ -292,6 +296,7 @@ class MultiHeadAttentionLayer(nn.Module):
         # energy = [batch size, n heads, seq len, seq len]
 
         if mask is not None:
+            mask = mask.unsqueeze(1).unsqueeze(2)
             energy = energy.masked_fill(mask == 0, -1e10)
 
         attention = torch.softmax(energy, dim=-1)
