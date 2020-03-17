@@ -293,8 +293,8 @@ for epoch in range(1, args.n_epochs+1):
             torch.save(desc_encoder.state_dict(), os.path.join(run_path, 'desc_encoder.pt'))
             torch.save(code_pooler.state_dict(), os.path.join(run_path, 'code_pooler.pt'))
             torch.save(desc_pooler.state_dict(), os.path.join(run_path, 'desc_pooler.pt'))
-        else:
-            patience_counter += 1
+    else:
+        patience_counter += 1
 
     print(f'Epoch: {epoch+1:02}')
     print(f'\tTrain Loss: {train_loss:.3f}, Train MRR: {train_mrr:.3f}')
