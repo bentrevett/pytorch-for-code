@@ -62,11 +62,7 @@ class CNN1D(nn.Module):
 
         for layer in self.layers:
 
-            print(embedded.shape)
-
             _embedded = layer(embedded)
-
-            print(_embedded.shape)
 
             if self.filter_size % 2 == 0:
                 padding = torch.zeros(batch_size, hid_dim, 1).fill_(self.pad_idx).to(self.device)

@@ -49,7 +49,8 @@ class Vocab:
 
         for token, count in tqdm(freqs.most_common(self.max_size), desc='Creating vocab...'):
             if token in itos:
-                assert f'tried to add {token} to vocab, but already exists!'
+                print(f'tried to add {token} to vocab, but already exists!')
+                continue
             if count < self.min_freq:
                 break
             else:

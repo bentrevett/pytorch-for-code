@@ -2,8 +2,7 @@ import os
 import gzip
 import shutil
 
-languages = ['python', 'java', 'go', 'php', 'ruby', 'javascript']
-languages = ['java']
+languages = ['java', 'python', 'go', 'php', 'ruby', 'javascript']
 
 os.makedirs('codesearchnet', exist_ok=True)
 

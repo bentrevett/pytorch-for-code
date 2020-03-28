@@ -59,6 +59,8 @@ def load_retrieval_data(path, code_vocab, desc_vocab, code_max_length,
             is_var = example['is_var']
             code = [code_vocab[t] for t in code][:code_max_length]
             desc = [desc_vocab[t] for t in desc][:desc_max_length]
+            is_var = is_var[:code_max_length]
+            assert len(code) == len(is_var)
             data.append({'code': code, 'desc': desc, 'is_var': is_var})
 
     dataset = RetrievalDataset(data, code_vocab.pad_idx, desc_vocab.pad_idx)
